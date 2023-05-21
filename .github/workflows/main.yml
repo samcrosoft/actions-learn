@@ -1,0 +1,16 @@
+name: Initial Workflow
+on: push
+env:
+  GLOBAL_AGENT_NAME: Global-Ubuntu
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      AGENT_NAME: Ubuntu-Image
+    steps:
+      - name: my-step
+        run: |
+          echo "Hello World!";
+          echo "the job env variable is ${AGENT_NAME}"
+          echo "the workflow env variable is ${GLOBAL_AGENT_NAME}"

@@ -1,0 +1,19 @@
+name: Custom Action
+on:
+  push:
+    branches:
+      - custom
+
+jobs:
+  build:
+    name: Hello world action
+    runs-on: ubuntu-latest
+    env:
+      AGENT_NAME: Ubuntu-Image
+    steps:
+      # you need to check out the code first to be able to access the custom action
+      - uses: actions/checkout@v1
+      - name: my-step
+        uses: ./custom-actions
+        with:
+          MY_NAME : "Hello Samcrosoft!"
