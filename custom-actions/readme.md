@@ -24,4 +24,5 @@ act-custom-actions-dockeraction                         latest                  
 $ docker run --rm -e INPUT_MY_NAME=samcrosoft -it act-custom-actions-dockeraction
 
 Hello world my name is samcrosoft
+
 ```
