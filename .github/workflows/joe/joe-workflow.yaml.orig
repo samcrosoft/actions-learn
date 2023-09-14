@@ -1,0 +1,101 @@
+name: Development pipeline
+defaults:
+  run:
+    working-directory: ./
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'dev/dev-*'
+      - 'joseph.eta/netm-central-devops-updates'
+
+permissions:
+  packages: read
+  contents: read
+
+jobs:
+  extract-branch-name:
+    runs-on: ubuntu-latest
+    outputs:
+      branchName: ${{ steps.extract_branch.outputs.BRANCH_NAME }}
+    steps:
+      - name: Extract branch name
+        id: extract_branch
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: echo "BRANCH_NAME=${BRANCH##*/}" >> $GITHUB_OUTPUT
+
+  login-to-aws-ecr:
+    runs-on: ubuntu-latest
+    outputs:
+      encryptedAwsEcrOtpo: ${{ steps.get_aws_ecr_otp.outputs.AWS_ECR_OTP}}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: eu-west-2
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_ECR }}
+          mask-aws-account-id: false
+
+      - name: Get AWS ECR OTP
+        id: get_aws_ecr_otp
+        env:
+          GPG_PASS_PHRASE: ${{ secrets.ARCADE_API_PGP_PASSPHRASE }}
+        run: echo "AWS_ECR_OTP=$(aws ecr get-login-password --region eu-west-2)" >> "$GITHUB_OUTPUT"
+#        run: echo "AWS_ECR_OTP=$(gpg --symmetric --batch --passphrase ${GPG_PASS_PHRASE} --output - <(aws ecr get-login-password --region eu-west-2) | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  phpunit-test:
+    needs:
+      - extract-branch-name
+      - login-to-aws-ecr
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    container:
+      image: 021085836331.dkr.ecr.eu-west-2.amazonaws.com/arcade-api:development-php-8.1-fpm-v220523.070747
+      credentials:
+        username: AWS
+        password: ${{ needs.login-to-aws-ecr.outputs.encryptedAwsEcrOtpo }}
+#        password: $(gpg --decrypt --quiet --batch --passphrase "$GPG_PASS_PHRASE" --output - <(echo "${{ needs.login-to-aws-ecr.outputs.encryptedAwsEcrOtpo }}" | base64 --decode))
+      env:
+        ENV: development
+        GPG_PASS_PHRASE: ${{ secrets.ARCADE_API_PGP_PASSPHRASE }}
+      volumes:
+        - ${{ github.workspace }}:/var/www/html
+    services:
+      arcade_db:
+        image: mariadb:10.3.23
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.ARCADE_API_PHPUNIT_MYSQL_ROOT_PASSWORD }}
+          ENV: development
+      arcade_cache:
+        image: redis:6.2
+        env:
+          ENV: development
+
+    steps:
+      - uses: actions/checkout@v3
+#
+#      - name: Export personal access token
+#        id: export_personal_access_token
+#        run: composer config -g github-oauth.github.com ${{ secrets.ARCADE_COMPOSER_AUTH }}
+
+      - name: Install dependencies
+        id: install_php_dependencies
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.ARCADE_COMPOSER_AUTH }}"}}'
+        run: chmod 660 Infrastructure/Configs/private.key && chmod 660 Infrastructure/Configs/public.key && composer install
+
+      - name: Mariadb startup probe
+        id: mariadb_startup_probe
+        run: docker exec arcade_db bash -c "while ! mysqladmin ping -h0.0.0.0 --silent; do sleep 1; done"
+
+      - name: Redis startup probe
+        id: redis_startup_probe
+        run: docker exec arcade_cache bash -c "while [ -z 'redis-cli ping | grep PONG' ]; do sleep 1; done"
+
+      - name: Run unit tests
+        id: run_unit_tests
+        run: php vendor/bin/phpunit --configuration ./Tests/phpunit.xml --do-not-cache-result

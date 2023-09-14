@@ -8,10 +8,10 @@ inputs:
     required: true
     default: "World"
 
-runs:
+runs: 
   using: "composite"
   steps:
-    - run: echo Hello ${{ inputs.MY_NAME }}.
+    - run: echo Hello world Mr ${{ inputs.MY_NAME }}.
       shell: bash
 
 branding:

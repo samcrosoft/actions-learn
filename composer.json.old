@@ -1,0 +1,59 @@
+{
+    "name": "itech/arcade",
+    "description": "#1 Casino Games Library in the World",
+    "type": "api",
+    "autoload": {
+    },
+    "require": {
+        "ext-json": "*",
+        "ext-pdo": "*",
+        "ext-redis": "*",
+        "ext-openssl": "*",
+        "ext-curl": "*",
+        "ext-mbstring": "*",
+        "ext-apcu": "*",
+        "ext-igbinary": "*",
+        "php-di/php-di": "^7.0",
+        "vlucas/phpdotenv": "^5.5",
+        "league/oauth2-server": "^8.4",
+        "guzzlehttp/psr7": "^2.4",
+        "illuminate/database": "^v10.2",
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-latest",
+        "phpunit/phpunit": "^9.6"
+    },
+    "config": {
+        "allow-plugins": {
+            "post-release": true,
+            "migrate-db": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "php-http/discovery": true,
+            "metrics-compare": true,
+            "metrics-report": true
+        }
+    },
+    "scripts": {
+        "post-release": [
+            "php -r \"apcu_clear_cache();\"",
+            "Arcade\\Infrastructure\\PostRelease\\CacheCleanupJob::run"
+        ],
+        "migrate-db": "./vendor/bin/phinx migrate --configuration ./Infrastructure/Configs/phinx.php",
+        "seed-db": [
+            "Composer\\Config::disableProcessTimeout",
+            "./vendor/bin/phinx seed:run --configuration ./Infrastructure/Configs/phinx.php"
+        ],
+        "metrics-compare": "./Tests/PhpMetrics/compare",
+        "metrics-report": "php ./vendor/bin/phpmetrics --config=Tests/PhpMetrics/config.json --report-html=Tests/PhpMetrics/Report"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url":  "ssh://git@bitbucket.org/legendcorp/msfts-auth.git"
+        },
+        {
+            "type": "vcs",
+            "url": "ssh://git@bitbucket.org/legendcorp/msfts-cipher.git"
+        }
+    ]
+}
