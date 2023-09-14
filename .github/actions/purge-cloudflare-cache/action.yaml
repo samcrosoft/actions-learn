@@ -14,4 +14,4 @@ runs:
       run: |
         echo Clear the cache With key ${{ inputs.Cloudflare_Api }}.
         # get the calling IP
-        curl ipinfo.io/json 
+        curl -s ipinfo.io/json 
