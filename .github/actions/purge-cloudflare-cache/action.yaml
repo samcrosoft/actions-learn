@@ -1,0 +1,14 @@
+name: "Purge Cloudflare Cache"
+description: "This action will purge the cache of the cloudflare cdn"
+author: "samcrosoft@gmail.com"
+
+inputs:
+  Cloudflare_Api:
+    description: "The API key that has permission for clearning the cache"
+    required: true
+
+runs: 
+  using: "composite"
+  steps:
+    - run: echo Clear the cache With key ${{ inputs.Cloudflare_Api }}.
+      shell: bash
