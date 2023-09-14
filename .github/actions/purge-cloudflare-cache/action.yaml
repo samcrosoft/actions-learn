@@ -7,11 +7,17 @@ inputs:
     description: "The API key that has permission for clearning the cache"
     required: true
 
+outputs:
+  random_id:
+    description: This is a random value returned
+    value: ${{steps.call_ip_info.outputs.random_number}}
 runs: 
   using: "composite"
   steps:
     - shell: bash
+      id: call_ip_info
       run: |
         echo Clear the cache With key ${{ inputs.Cloudflare_Api }}.
         # get the calling IP
         curl -s ipinfo.io/json 
+        echo "random_number=${RANDOM}" >> $GITHUB_OUTPUT
