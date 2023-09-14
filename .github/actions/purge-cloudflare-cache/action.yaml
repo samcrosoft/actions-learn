@@ -20,4 +20,5 @@ runs:
         echo Clear the cache With key ${{ inputs.Cloudflare_Api }}.
         # get the calling IP
         curl -s ipinfo.io/json 
-        echo "random_number=${RANDOM}" >> $GITHUB_OUTPUT
+        echo "random_number= true" >> $GITHUB_OUTPUT
+        # echo "random_number=${RANDOM}" >> $GITHUB_OUTPUT
